@@ -1,0 +1,19 @@
+Source,Property,Value
+historical_emissions_cait,Title (75 character limit),Climate Watch Historical GHG Emissions
+historical_emissions_cait,Technical Title,Climate Watch Historical Country Greenhouse Gas Emissions Data (1990-2018)
+historical_emissions_cait,Source Organization,World Resources Institute
+historical_emissions_cait,Learn More Link,https://www.climatewatchdata.org/ghg-emissions
+historical_emissions_cait,"Function/Summary: Tagline description of what data says 
+(150 character limit)",Historical country-level and sectoral GHG emission data (1990-2018)
+historical_emissions_cait,"Description: 
+Recap data name, source organization
+Objectives/ data type/ Methodology","Climate Watch Historical Emission data contains sector-level greenhouse gas (GHG) emissions data for 194 countries and the European Union (EU) for the period 1990-2018, including emissions of the six major GHGs from most major sources and sinks.  Non-CO2 emissions are expressed in CO2 equivalents using 100-year global warming potential values from IPCC Fourth Assessment Report."
+historical_emissions_cait,Cautions: Known use limitations/cautions regarding: geographic/content coverage; source (inconsistency); methodology ,"Climate Watch Historical GHG Emissions data (previously published through CAIT Climate Data Explorer) are derived from several sources. Any use of the Land-Use Change and Forestry or Agriculture indicator should be cited as FAO 2020, FAOSTAT Emissions Database. Any use of CO2 emissions from fuel combustion data should be cited as CO2 Emissions from Fuel Combustion, OECD/IEA, 2020. As of March 2020, emissions from European Union (27) for all years no longer include emissions from United Kingdom on Climate Watch."
+historical_emissions_cait,Geographic Coverage: global; quasi-global; select regions/countries,Global
+historical_emissions_cait,Date of Content: List all years; for multiple years (2001 - 2014),1990-2018
+historical_emissions_cait,Frequency of Updates: annual; every x years/months/days; no updates planned,Annual. Last updated March 2021.
+historical_emissions_cait,Summary of License,Creative Commons Attribution-NonCommercial 4.0 International license
+historical_emissions_cait,Link to License or Terms of Service,https://creativecommons.org/licenses/by/4.0/
+historical_emissions_cait,Citation,"Climate Watch Historical GHG Emissions. 2021. Washington, DC: World Resources Institute. Available online at: https://www.climatewatchdata.org/ghg-emissions"
+historical_emissions_cait,Published Language,English
+historical_emissions_cait,Published Title (If not English),

@@ -1,7 +1,6 @@
 import numpy as np
-
-E = 3
-tau = 1
+from functools import reduce
+from scipy import integrate
 
 
 def symbolic(v):
@@ -13,17 +12,22 @@ def symbolic(v):
         return '↗'
 
 
-def retrieve_shadow_attractor(X, E=E):
-    l = X.shape[0] - E + 1
+def get_symbolic_ind(x):
+    return int(reduce(lambda x, y: x + 3 ** y[0] * (y[1] + 1),
+                      enumerate(x), 0))
+
+
+def retrieve_shadow_attractor(X, E, tau):
+    l = X.shape[0] - (E - 1) * tau
     mx = np.empty((E, l))
     for i in range(E):
-        mx[E - i - 1] = X[i: i+l]
-        # mx[i] = X[i: i+l]
+        mx[E - i - 1] = X[i * tau: i * tau + l]
+        # mx[i] = X[i * tau: i * tau + l]
 
     return mx.T
 
 
-def get_rate(mx, E=E):
+def get_rate(mx, E):
     rate = np.empty((mx.shape[0], E - 1))
     for i in range(1, E):
         rate[:, i - 1] = mx[:, i] / mx[:, i-1] - 1
@@ -31,19 +35,19 @@ def get_rate(mx, E=E):
     return rate
 
 
-def get_dist(mx, E=E):
+def get_dist(mx, E, p=2):
     l = mx.shape[0]
     dist = np.empty((l, l))
     dist.fill(float('inf'))
     for i in range(l):
         for j in range(i + 1, l):
-            dist[i, j] = np.linalg.norm(mx[i] - mx[j])
+            dist[i, j] = np.linalg.norm(mx[i] - mx[j], ord=p)
             dist[j, i] = dist[i, j]
 
     return dist
 
 
-def get_nn_weight(dist, no=E+1):
+def get_nn_weight(dist, no):
     nn_dist = np.sort(dist, axis=1)[:, :no]
     nn_index = np.argsort(dist, axis=1)[:, : no]
     nn_w = np.empty(nn_dist.shape)
@@ -72,22 +76,22 @@ def get_signature(nn_w, rate):
     return S, _S
 
 
-def get_pc_matrix(X, Y_hat, Y, E=E):
-    E2 = E**2
-    hit = np.zeros((E2, E2))
-    all = np.zeros((E2, E2))
+def get_accuracy(X, Y_hat, Y, E):
+    n = 3**(E - 1)
+    hit = np.zeros((n, n))
+    all = np.zeros((n, n))
     right_ind = np.logical_and.reduce((Y_hat == Y).T)
     for i in range(X.shape[0]):
-        s_x = X[i]
-        s_y = Y[i]
-        x_ind = int((s_x[1] + 1) * 3 + (s_x[0] + 1))
-        y_ind = int((s_y[1] + 1) * 3 + (s_y[0] + 1))
+
+        x_ind = get_symbolic_ind(X[i])
+        y_ind = get_symbolic_ind(Y[i])
 
         all[x_ind, y_ind] += 1
 
         if right_ind[i]:
             hit[x_ind, y_ind] += 1
 
+    '''
     accuracy = np.zeros(all.shape)
     for i in range(all.shape[0]):
         for j in range(all.shape[1]):
@@ -95,11 +99,34 @@ def get_pc_matrix(X, Y_hat, Y, E=E):
                 accuracy[i, j] = hit[i, j] / all[i, j]
             # else:
                 # accuracy[i, j] = -1
+    '''
 
-    return accuracy
+    # return accuracy
+    return hit, all
 
 
-def extract_casuality(m):
+def get_pc_matrix(S_X, S_Y, E, p):
+    Xv, Xp = S_X
+    Yv, Yp = S_Y
+
+    n = 3 ** (E - 1)
+    pc_m = np.zeros((n, n))
+
+    def erf(x0, x1):
+        return integrate.quad(lambda x: np.e ** (- x ** 2), x0, x1)[0] / np.pi ** (1/2)
+
+    for i in range(Xv.shape[0]):
+        x_ind = get_symbolic_ind(Xp[i])
+        y_ind = get_symbolic_ind(Yp[i])
+
+        r = np.linalg.norm(Yv[i], ord=p) / np.linalg.norm(Xv[i], ord=p)
+
+        pc_m[x_ind, y_ind] += erf(-r, r)
+
+    return pc_m
+
+
+def extract_casuality(m, mL):
     positive = 0
     negative = 0
     dark = 0
@@ -113,28 +140,37 @@ def extract_casuality(m):
             else:
                 dark += m[i, j]
 
-    return positive, negative, dark
+    return positive / mL, negative / mL, dark / mL
 
 
-def PC(X, Y, E=E, tau=tau, no=E+1):
-    mx = retrieve_shadow_attractor(X)
-    my = retrieve_shadow_attractor(Y)
+def PC(X, Y, E, tau, no=None, p=2):
 
-    rate_x = get_rate(mx)
-    rate_y = get_rate(my)
+    if no is None:
+        no = E + 1
+    mx = retrieve_shadow_attractor(X, E=E, tau=tau)
+    my = retrieve_shadow_attractor(Y, E=E, tau=tau)
 
-    dist_x = get_dist(mx)
-    dist_y = get_dist(my)
+    rate_x = get_rate(mx, E=E)
+    rate_y = get_rate(my, E=E)
 
-    nn_w_x = get_nn_weight(dist_x)
-    nn_w_y = get_nn_weight(dist_y)
+    dist_x = get_dist(mx, E=E, p=p)
+    dist_y = get_dist(my, E=E, p=p)
 
-    _, S_X = get_signature(nn_w_x, rate_x)
-    _, S_Y = get_signature(nn_w_y, rate_y)
-    _, S_X_hat = get_signature(nn_w_y, rate_x)
-    _, S_Y_hat = get_signature(nn_w_x, rate_y)
+    nn_w_x = get_nn_weight(dist_x, no=no)
+    nn_w_y = get_nn_weight(dist_y, no=no)
 
-    X_Y = get_pc_matrix(S_Y, S_X_hat, S_X)
-    Y_X = get_pc_matrix(S_X, S_Y_hat, S_Y)
+    S_X = get_signature(nn_w_x, rate_x)
+    S_Y = get_signature(nn_w_y, rate_y)
 
-    return extract_casuality(X_Y), extract_casuality(Y_X)
+    # S_X_hat = get_signature(nn_w_y, rate_x)
+    # S_Y_hat = get_signature(nn_w_x, rate_y)
+
+    # X_Y_acc = get_accuracy(S_Y[1], S_X_hat[1], S_X[1], E=E)
+    # Y_X_acc = get_accuracy(S_X[1], S_Y_hat[1], S_Y[1], E=E)
+
+    X_Y_pc = get_pc_matrix(S_X, S_Y, E=E, p=p)
+    Y_X_pc = get_pc_matrix(S_Y, S_X, E=E, p=p)
+
+    mL = S_X[0].shape[0]
+
+    return extract_casuality(X_Y_pc, mL), extract_casuality(Y_X_pc, mL), [X_Y_pc, Y_X_pc]
